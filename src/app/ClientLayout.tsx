@@ -12,12 +12,12 @@ interface ClientLayoutProps {
 
 function ClientLayoutContent({ children }: ClientLayoutProps) {
   const [mounted, setMounted] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [showContent, setShowContent] = useState(false);
+  const [showLoader, setShowLoader] = useState(false);
+  const [loaderReady, setLoaderReady] = useState(false);
+  const [contentReady, setContentReady] = useState(false);
 
   const pathname = usePathname();
   const searchParams = useSearchParams();
-
   const lastPathname = useRef<string | null>(null);
 
   const skipLoaderRoutes = ["/cart", "/checkout", "/checkout/success"];
@@ -27,74 +27,114 @@ function ClientLayoutContent({ children }: ClientLayoutProps) {
     pathname.startsWith("/checkout") ||
     pathname === "/feed" ||
     pathname === "/admin" ||
-    pathname === "/delete";
+    pathname === "/delete" ||
+    pathname === "/signup";
 
-  // Hydration guard
+  // Check if this is truly the initial page load
+  const checkInitialLoad = () => {
+    if (typeof window === "undefined") return true;
+    
+    const hasVisited = sessionStorage.getItem("hasVisited");
+    if (!hasVisited) return true;
+    
+    const navigation = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming;
+    return navigation?.type === "reload";
+  };
+
+  // Initialize states
   useEffect(() => {
+    const isInitial = checkInitialLoad();
+    const shouldShow = isInitial && !skipLoader;
+    
+    setShowLoader(shouldShow);
+    setLoaderReady(shouldShow);
     setMounted(true);
-  }, []);
 
-  // Force 3 sec loader on every route except skipLoaderRoutes
+    if (shouldShow && !sessionStorage.getItem("hasVisited")) {
+      sessionStorage.setItem("hasVisited", "true");
+    }
+  }, [skipLoader]);
+
+  // Handle loader completion
   useEffect(() => {
-    if (!mounted || skipLoader) return;
+    if (!showLoader) return;
 
-    setLoading(true);
-    setShowContent(false);
+    const completeLoader = setTimeout(() => {
+      setShowLoader(false);
+      // Small delay to ensure smooth transition
+      setTimeout(() => setContentReady(true), 100);
+    }, 3800); // Slightly longer to account for exit animations
 
-    const timeout = setTimeout(() => {
-      setLoading(false);
-      setShowContent(true);
-    }, 3000);
+    return () => clearTimeout(completeLoader);
+  }, [showLoader]);
 
-    return () => clearTimeout(timeout);
-  }, [pathname, mounted, skipLoader]);
-
-  // Auto scroll to top after route OR query change
+  // Set content ready immediately if no loader
   useEffect(() => {
-    if (!mounted) return;
+    if (!showLoader && mounted) {
+      setContentReady(true);
+    }
+  }, [showLoader, mounted]);
 
-    requestAnimationFrame(() => {
+  // Smooth scroll to top on navigation
+  useEffect(() => {
+    if (!mounted || !contentReady) return;
+
+    const scrollToTop = () => {
       if (lastPathname.current !== pathname) {
         window.scrollTo({ top: 0, behavior: "smooth" });
         lastPathname.current = pathname;
-      } else {
-        window.scrollTo({ top: 0, behavior: "auto" });
       }
-    });
-  }, [pathname, searchParams, mounted]);
+    };
+
+    requestAnimationFrame(scrollToTop);
+  }, [pathname, searchParams, mounted, contentReady]);
+
+  // Server-side rendering fallback
+  if (!mounted) {
+    return (
+      <div className="fixed inset-0 z-[9999] bg-[#f5f5dc]">
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-20 h-20 border-7 border-orange-600/50 border-t-orange-700 rounded-full animate-spin"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      {/* Global Loader (disabled on cart/checkout routes) */}
-      {!skipLoader && (
-        <div
-          className={`absolute inset-0 z-50 transition-opacity duration-1000 ${
-            loading ? "opacity-100" : "opacity-0 pointer-events-none"
-          }`}
-        >
-          <Loader isLoading={loading} />
-        </div>
+    <>
+      {/* Loader Layer */}
+      {loaderReady && (
+        <Loader isLoading={showLoader} />
       )}
 
-      {/* Content */}
-      {mounted && (
-        <div
-          className={`transition-opacity duration-1000 ${
-            showContent || skipLoader ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          {!hideLayout && <Navbar />}
-          <main>{children}</main>
-          {!hideLayout && <Footer />}
-        </div>
-      )}
-    </div>
+      {/* Main Content Layer */}
+      <div 
+        className={`min-h-screen transition-all duration-1000 ease-out ${
+          showLoader ? 'opacity-0 translate-y-8 pointer-events-none' : 'opacity-100 translate-y-0'
+        }`}
+        style={{
+          visibility: contentReady ? 'visible' : 'hidden'
+        }}
+      >
+        {!hideLayout && <Navbar />}
+        <main>{children}</main>
+        {!hideLayout && <Footer />}
+      </div>
+    </>
   );
 }
 
 export default function ClientLayout({ children }: ClientLayoutProps) {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense 
+      fallback={
+        <div className="fixed inset-0 z-[9999] bg-[#f5f5dc]">
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-20 h-20 border-7 border-orange-600/50 border-t-orange-700 rounded-full animate-spin"></div>
+          </div>
+        </div>
+      }
+    >
       <ClientLayoutContent>{children}</ClientLayoutContent>
     </Suspense>
   );
