@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { ReactNode, useEffect, useRef, useState, Suspense } from "react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import Loader from "@/components/loader";
@@ -93,5 +93,9 @@ function ClientLayoutContent({ children }: ClientLayoutProps) {
 }
 
 export default function ClientLayout({ children }: ClientLayoutProps) {
-  return <ClientLayoutContent>{children}</ClientLayoutContent>;
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ClientLayoutContent>{children}</ClientLayoutContent>
+    </Suspense>
+  );
 }
