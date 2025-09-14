@@ -2,7 +2,7 @@
 
 export const sidebarMenus = {
   admin: [
-    { label: "Dashboard", path: "/modules/admin" },
+    { label: "Profile", path: "/modules/admin" },
     { label: "Analytics", path: "/admin" },
     { label: "Home", path: "/" },
     { label: "Discover", path: "/map" },
@@ -11,7 +11,7 @@ export const sidebarMenus = {
     { label: "Contact Us", path: "/contactUs" },
   ],
   vet: [
-    { label: "Dashboard", path: "/modules/vet" },
+    { label: "Profile", path: "/modules/vet" },
     { label: "Home", path: "/" },
     { label: "Discover", path: "/map" },
     { label: "Shop", path: "/products" },
@@ -19,8 +19,7 @@ export const sidebarMenus = {
     { label: "Contact Us", path: "/contactUs" },
   ],
   user: [
-    { label: "Dashboard", path: "/modules/user" },
-    { label: "Home", path: "/" },
+    { label: "Profile", path: "/modules/user" },
     { label: "Discover", path: "/map" },
     { label: "Shop", path: "/products" },
     { label: "News Feed", path: "/feed" },
