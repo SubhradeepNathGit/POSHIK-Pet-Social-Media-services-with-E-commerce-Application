@@ -200,7 +200,7 @@ export default function Loader({ isLoading }: LoaderProps) {
                 textShadow: '0 0 12px rgba(255,255,255,0.4)',
               }}
             >
-              Connecting Pet Lovers with around You
+              Connecting Pet Lovers, from Cute Clicks to Heartfelt Bonds
             </div>
           </div>
         </motion.div>
