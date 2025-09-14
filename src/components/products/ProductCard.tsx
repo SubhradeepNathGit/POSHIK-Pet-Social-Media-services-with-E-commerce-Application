@@ -363,7 +363,7 @@ export default function ProductCard({ product }: { product: Product }) {
                         ? "text-green-400"
                         : msg.includes("Limit reached")
                         ? "text-red-500"
-                        : "text-red-400"
+                        : "text-red-500"
                     }`}
                   >
                     {msg}

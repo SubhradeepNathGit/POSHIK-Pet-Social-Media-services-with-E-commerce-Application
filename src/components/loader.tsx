@@ -15,6 +15,7 @@ export default function Loader({ isLoading }: LoaderProps) {
   const [pawData, setPawData] = useState<Record<string, unknown> | null>(null);
 
   const titleRef = useRef<HTMLDivElement | null>(null);
+  const subtitleRef = useRef<HTMLDivElement | null>(null);
   const timelineRef = useRef<gsap.core.Timeline | null>(null);
 
   /* ================== State Sync ================== */
@@ -43,6 +44,7 @@ export default function Loader({ isLoading }: LoaderProps) {
     timelineRef.current?.kill();
     timelineRef.current = null;
     if (titleRef.current) titleRef.current.innerHTML = '';
+    if (subtitleRef.current) subtitleRef.current.style.opacity = '0';
   }, []);
 
   /* ================== Create Title Spans ================== */
@@ -64,7 +66,7 @@ export default function Loader({ isLoading }: LoaderProps) {
     return spans;
   }, []);
 
-  /* ================== Animate Title ================== */
+  /* ================== Animate Title + Subtitle ================== */
   useEffect(() => {
     if (!show) return cleanupAnimation();
     if (!titleRef.current) return;
@@ -82,6 +84,16 @@ export default function Loader({ isLoading }: LoaderProps) {
       delay: 0.6,
     });
 
+    // Animate subtitle after title finishes
+    if (subtitleRef.current) {
+      tl.to(subtitleRef.current, {
+        opacity: 1,
+        y: 0,
+        duration: 0.8,
+        ease: 'power3.out',
+      }, "+=0.3");
+    }
+
     timelineRef.current = tl;
 
     return () => cleanupAnimation();
@@ -89,13 +101,13 @@ export default function Loader({ isLoading }: LoaderProps) {
 
   /* ================== Container Fade ================== */
   const containerVariants: Variants = {
-    hidden: { opacity: 0 }, // FIX: start transparent
+    hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: { duration: 0.6, ease: 'easeInOut' },
     },
     exit: {
-      opacity: 0, // FIX: fade out smoothly
+      opacity: 0,
       transition: { duration: 0.6, ease: 'easeInOut' },
     },
   };
@@ -132,7 +144,7 @@ export default function Loader({ isLoading }: LoaderProps) {
             {/* Dark Overlay */}
             <motion.div
               className="absolute inset-0 bg-black"
-              initial={{ opacity: 0.3 }} // FIX: fade in overlay
+              initial={{ opacity: 0.3 }}
               animate={{ opacity: 0.5 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.6, ease: 'easeInOut' }}
@@ -179,6 +191,17 @@ export default function Loader({ isLoading }: LoaderProps) {
                 minHeight: '1.2em',
               }}
             />
+
+            {/* Subtitle */}
+            <div
+              ref={subtitleRef}
+              className="mt-4 text-lg sm:text-xl lg:text-xl text-white/70 font-medium opacity-0 translate-y-3"
+              style={{
+                textShadow: '0 0 12px rgba(255,255,255,0.4)',
+              }}
+            >
+              Connecting Pet Lovers with around You
+            </div>
           </div>
         </motion.div>
       )}

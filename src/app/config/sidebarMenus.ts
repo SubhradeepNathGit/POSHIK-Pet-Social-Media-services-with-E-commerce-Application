@@ -2,35 +2,26 @@
 
 export const sidebarMenus = {
   admin: [
-     { label: "Profile", path: "/dashboard" },
+    { label: "Dashboard", path: "/modules/admin" },
+    { label: "Analytics", path: "/admin" },
     { label: "Home", path: "/" },
     { label: "Discover", path: "/map" },
-  
     { label: "Shop", path: "/products" },
     { label: "News Feed", path: "/feed" },
-    { label: "Analytics", path: "/admin" },
     { label: "Contact Us", path: "/contactUs" },
-    
-    
-   
-    
   ],
   vet: [
-    { label: "Profile", path: "/profile" },
+    { label: "Dashboard", path: "/modules/vet" },
     { label: "Home", path: "/" },
     { label: "Discover", path: "/map" },
     { label: "Shop", path: "/products" },
     { label: "News Feed", path: "/feed" },
     { label: "Contact Us", path: "/contactUs" },
-   
-    
-    
   ],
   user: [
-    { label: "Profile", path: "/dashboard" },
-   
+    { label: "Dashboard", path: "/modules/user" },
+    { label: "Home", path: "/" },
     { label: "Discover", path: "/map" },
-    
     { label: "Shop", path: "/products" },
     { label: "News Feed", path: "/feed" },
     { label: "Book Appointment", path: "/appointments/new" },

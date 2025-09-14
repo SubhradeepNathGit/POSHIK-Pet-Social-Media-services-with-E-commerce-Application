@@ -120,4 +120,20 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Prevent white screen flash during loading */
+  html, body {
+    background-color: #f5f5dc !important;
+  }
+  
+  /* Smooth transitions for loader */
+  .loader-container {
+    transition: opacity 0.8s ease-in-out;
+  }
+  
+  /* Prevent layout shifts */
+  .min-h-screen {
+    min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for mobile */
+  }
 }

@@ -59,7 +59,6 @@ const Banner = () => {
 
   /* ================== State ================== */
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [isMuted] = useState(true);
 
@@ -121,12 +120,12 @@ const Banner = () => {
           if (video && idx !== currentSlide) video.pause();
         });
 
+        // Video is already preloaded
+
         currentVideo.muted = isMuted;
         await currentVideo.play();
-        setIsVideoLoaded(true);
       } catch (error) {
         console.warn('Video autoplay failed:', error);
-        setIsVideoLoaded(false);
       }
     };
     playVideo();
@@ -158,16 +157,11 @@ const Banner = () => {
             ref={(el) => {
               videoRefs.current[index] = el;
             }}
-            className="absolute inset-0 w-full h-full object-cover"
+            className={`absolute inset-0 w-full h-full object-cover ${index === currentSlide ? 'banner-video' : ''}`}
             muted={isMuted}
             loop
             playsInline
             preload="auto"
-            onLoadedData={() => setIsVideoLoaded(true)}
-            onError={() => {
-              console.warn(`Failed to load video: ${slide.videoSrc}`);
-              setIsVideoLoaded(false);
-            }}
           >
             <source src={slide.videoSrc} type="video/mp4" />
           </video>
@@ -175,21 +169,7 @@ const Banner = () => {
         </div>
       ))}
 
-      {/* Loader Overlay */}
-      {!isVideoLoaded && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{
-              duration: 0.5,
-              repeat: Infinity,
-              repeatType: 'reverse',
-            }}
-            className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"
-          />
-        </div>
-      )}
+      {/* Removed loader overlay for immediate loading */}
 
       {/* Content */}
       <div className="relative z-10 h-full flex items-center justify-center">

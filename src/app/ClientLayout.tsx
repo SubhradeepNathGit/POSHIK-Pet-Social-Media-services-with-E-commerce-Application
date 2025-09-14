@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useRef, useState, Suspense } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import Loader from "@/components/loader";
@@ -10,7 +10,6 @@ interface ClientLayoutProps {
   children: ReactNode;
 }
 
-// Component that uses useSearchParams - needs to be wrapped in Suspense
 function ClientLayoutContent({ children }: ClientLayoutProps) {
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -19,63 +18,35 @@ function ClientLayoutContent({ children }: ClientLayoutProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // Track last route for scroll behavior
   const lastPathname = useRef<string | null>(null);
 
-  // Routes where we disable the global loader
   const skipLoaderRoutes = ["/cart", "/checkout", "/checkout/success"];
   const skipLoader = skipLoaderRoutes.includes(pathname);
 
-  // Hide Navbar/Footer for checkout pages OR feed page
-  const hideLayout = pathname.startsWith("/checkout") || pathname === "/feed" || pathname === "/admin" || pathname ==="/delete"  ;
+  const hideLayout =
+    pathname.startsWith("/checkout") ||
+    pathname === "/feed" ||
+    pathname === "/admin" ||
+    pathname === "/delete";
 
   // Hydration guard
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Loader handling (only for non-checkout routes)
+  // Force 3 sec loader on every route except skipLoaderRoutes
   useEffect(() => {
     if (!mounted || skipLoader) return;
 
-    if (pathname === "/404" || pathname === "/not-found") {
+    setLoading(true);
+    setShowContent(false);
+
+    const timeout = setTimeout(() => {
       setLoading(false);
       setShowContent(true);
-      return;
-    }
+    }, 3000);
 
-    let timeout: NodeJS.Timeout;
-    const video = document.querySelector<HTMLVideoElement>("video.banner-video");
-
-    if (video) {
-      video.preload = "auto";
-
-      const handleVideoReady = () => {
-        clearTimeout(timeout);
-        setLoading(false);
-        setShowContent(true);
-      };
-
-      video.addEventListener("canplaythrough", handleVideoReady, { once: true });
-
-      // Fallback if video takes too long
-      timeout = setTimeout(() => {
-        setLoading(false);
-        setShowContent(true);
-      }, 3000);
-
-      return () => {
-        video.removeEventListener("canplaythrough", handleVideoReady);
-        clearTimeout(timeout);
-      };
-    } else {
-      timeout = setTimeout(() => {
-        setLoading(false);
-        setShowContent(true);
-      }, 1500);
-
-      return () => clearTimeout(timeout);
-    }
+    return () => clearTimeout(timeout);
   }, [pathname, mounted, skipLoader]);
 
   // Auto scroll to top after route OR query change
@@ -121,11 +92,6 @@ function ClientLayoutContent({ children }: ClientLayoutProps) {
   );
 }
 
-// Main component with Suspense wrapper
 export default function ClientLayout({ children }: ClientLayoutProps) {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <ClientLayoutContent>{children}</ClientLayoutContent>
-    </Suspense>
-  );
+  return <ClientLayoutContent>{children}</ClientLayoutContent>;
 }
