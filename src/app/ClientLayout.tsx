@@ -10,132 +10,133 @@ interface ClientLayoutProps {
   children: ReactNode;
 }
 
-function ClientLayoutContent({ children }: ClientLayoutProps) {
+// Separate component that uses useSearchParams with Suspense
+function LayoutWithSearchParams({ children }: ClientLayoutProps) {
   const [mounted, setMounted] = useState(false);
-  const [showLoader, setShowLoader] = useState(false);
-  const [loaderReady, setLoaderReady] = useState(false);
-  const [contentReady, setContentReady] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [showContent, setShowContent] = useState(true);
 
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  // Track last route for scroll behavior
   const lastPathname = useRef<string | null>(null);
 
-  const skipLoaderRoutes = ["/cart", "/checkout", "/checkout/success"];
+  // Routes where we disable the global loader
+  const skipLoaderRoutes = ["/cart", "/checkout", "/checkout/success", "/dashboard"];
   const skipLoader = skipLoaderRoutes.includes(pathname);
 
-  const hideLayout =
-    pathname.startsWith("/checkout") ||
-    pathname === "/feed" ||
-    pathname === "/admin" ||
-    pathname === "/delete" ||
-    pathname === "/signup";
+  // Hide Navbar/Footer
+  const hideLayout = pathname.startsWith("/checkout") || pathname === "/feed" || pathname === "/dashboard";
 
-  // Check if this is truly the initial page load
-  const checkInitialLoad = () => {
-    if (typeof window === "undefined") return true;
-    
-    const hasVisited = sessionStorage.getItem("hasVisited");
-    if (!hasVisited) return true;
-    
-    const navigation = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming;
-    return navigation?.type === "reload";
-  };
-
-  // Initialize states
+  // Hydration guard
   useEffect(() => {
-    const isInitial = checkInitialLoad();
-    const shouldShow = isInitial && !skipLoader;
-    
-    setShowLoader(shouldShow);
-    setLoaderReady(shouldShow);
     setMounted(true);
+  }, []);
 
-    if (shouldShow && !sessionStorage.getItem("hasVisited")) {
-      sessionStorage.setItem("hasVisited", "true");
+  // Loader handling (only for non-checkout routes)
+  useEffect(() => {
+    if (!mounted || skipLoader) return;
+
+    if (pathname === "/404" || pathname === "/not-found") {
+      setLoading(false);
+      setShowContent(true);
+      return;
     }
-  }, [skipLoader]);
 
-  // Handle loader completion
-  useEffect(() => {
-    if (!showLoader) return;
+    let timeout: NodeJS.Timeout;
+    const video = document.querySelector<HTMLVideoElement>("video.banner-video");
 
-    const completeLoader = setTimeout(() => {
-      setShowLoader(false);
-      // Small delay to ensure smooth transition
-      setTimeout(() => setContentReady(true), 100);
-    }, 3800); // Slightly longer to account for exit animations
+    if (video) {
+      video.preload = "auto";
 
-    return () => clearTimeout(completeLoader);
-  }, [showLoader]);
+      const handleVideoReady = () => {
+        clearTimeout(timeout);
+        setLoading(false);
+        setShowContent(true);
+      };
 
-  // Set content ready immediately if no loader
-  useEffect(() => {
-    if (!showLoader && mounted) {
-      setContentReady(true);
+      video.addEventListener("canplaythrough", handleVideoReady, { once: true });
+
+      // Fallback if video takes too long
+      timeout = setTimeout(() => {
+        setLoading(false);
+        setShowContent(true);
+      }, 3000);
+
+      return () => {
+        video.removeEventListener("canplaythrough", handleVideoReady);
+        clearTimeout(timeout);
+      };
+    } else {
+      timeout = setTimeout(() => {
+        setLoading(false);
+        setShowContent(true);
+      }, 3000);
+
+      return () => clearTimeout(timeout);
     }
-  }, [showLoader, mounted]);
+  }, [pathname, mounted, skipLoader]);
 
-  // Smooth scroll to top on navigation
+  // Auto scroll to top after route OR query change
   useEffect(() => {
-    if (!mounted || !contentReady) return;
+    if (!mounted) return;
 
-    const scrollToTop = () => {
+    requestAnimationFrame(() => {
       if (lastPathname.current !== pathname) {
         window.scrollTo({ top: 0, behavior: "smooth" });
         lastPathname.current = pathname;
+      } else {
+        window.scrollTo({ top: 0, behavior: "auto" });
       }
-    };
-
-    requestAnimationFrame(scrollToTop);
-  }, [pathname, searchParams, mounted, contentReady]);
-
-  // Server-side rendering fallback
-  if (!mounted) {
-    return (
-      <div className="fixed inset-0 z-[9999] bg-[#f5f5dc]">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-20 h-20 border-7 border-orange-600/50 border-t-orange-700 rounded-full animate-spin"></div>
-        </div>
-      </div>
-    );
-  }
+    });
+  }, [pathname, searchParams, mounted]);
 
   return (
-    <>
-      {/* Loader Layer */}
-      {loaderReady && (
-        <Loader isLoading={showLoader} />
+    <div className="relative min-h-screen overflow-hidden">
+      {/* Global Loader (disabled on cart/checkout routes) */}
+      {!skipLoader && (
+        <div
+          className={`absolute inset-0 z-50 transition-opacity duration-1000 ${
+            loading ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
+        >
+          <Loader isLoading={loading} />
+        </div>
       )}
 
-      {/* Main Content Layer */}
-      <div 
-        className={`min-h-screen transition-all duration-1000 ease-out ${
-          showLoader ? 'opacity-0 translate-y-8 pointer-events-none' : 'opacity-100 translate-y-0'
-        }`}
-        style={{
-          visibility: contentReady ? 'visible' : 'hidden'
-        }}
-      >
-        {!hideLayout && <Navbar />}
-        <main>{children}</main>
-        {!hideLayout && <Footer />}
-      </div>
-    </>
+      {/* Content (render only after loader finishes) */}
+      {mounted && (!loading || skipLoader) && (
+        <div
+          className={`transition-opacity duration-1000 ${
+            showContent || skipLoader ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          {!hideLayout && <Navbar />}
+          <main>{children}</main>
+          {!hideLayout && <Footer />}
+        </div>
+      )}
+    </div>
   );
 }
 
+// Loading fallback component
+function LayoutFallback() {
+  return (
+    <div className="relative min-h-screen overflow-hidden">
+      <div className="absolute inset-0 z-50">
+        <Loader isLoading={true} />
+      </div>
+    </div>
+  );
+}
+
+// Main component with Suspense wrapper
 export default function ClientLayout({ children }: ClientLayoutProps) {
   return (
-    <Suspense 
-      fallback={
-        <div className="fixed inset-0 z-[9999] bg-[#f5f5dc]">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-20 h-20 border-7 border-orange-600/50 border-t-orange-700 rounded-full animate-spin"></div>
-          </div>
-        </div>
-      }
-    >
-      <ClientLayoutContent>{children}</ClientLayoutContent>
+    <Suspense fallback={<LayoutFallback />}>
+      <LayoutWithSearchParams>{children}</LayoutWithSearchParams>
     </Suspense>
   );
 }
