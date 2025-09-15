@@ -62,7 +62,7 @@ function LayoutWithSearchParams({ children }: ClientLayoutProps) {
       timeout = setTimeout(() => {
         setLoading(false);
         setShowContent(true);
-      }, 3000);
+      }, 4000);
 
       return () => {
         video.removeEventListener("canplaythrough", handleVideoReady);
@@ -72,7 +72,7 @@ function LayoutWithSearchParams({ children }: ClientLayoutProps) {
       timeout = setTimeout(() => {
         setLoading(false);
         setShowContent(true);
-      }, 3000);
+      }, 4000);
 
       return () => clearTimeout(timeout);
     }
